@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download YouTube Video & Audio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        input[type="url"] {
+            padding: 10px;
+            width: 300px;
+            margin: 10px;
+        }
+        select, button {
+            padding: 10px;
+        }
+        .btn {
+            background-color: #007BFF;
+            color: white;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .status {
+            font-weight: bold;
+            color: green;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Download YouTube Video & Audio</h1>
+
+    <form id="downloadForm">
+        <input type="url" id="url" placeholder="Enter YouTube URL" required>
+        <select id="format">
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+        </select>
+        <button type="submit" class="btn">Download</button>
+    </form>
+
+    <div id="status" class="status"></div>
+
+    <script>
+        document.getElementById('downloadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const url = document.getElementById('url').value;
+            const format = document.getElementById('format').value;
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, format })
+                });
+
+                if (!response.ok) throw new Error('Download failed');
+
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = format === 'audio' ? 'audio_output.mp3' : 'video_output.mp4';
+
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+
+                a.click();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                document.getElementById('status').innerText = 'Download completed!';
+            } catch (err) {
+                console.error('Download Error:', err);
+                document.getElementById('status').innerText = `Download Error: ${err.message}`;
+            }
+        });
+    </script>
+
+</body>
+</html>
